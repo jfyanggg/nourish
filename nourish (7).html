@@ -1,0 +1,1252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>Nourish · Daily Ledger</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500;600&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg: #fafaf7;
+    --surface: #ffffff;
+    --surface-alt: #f5f5f0;
+    --border: #e7e5e0;
+    --border-hover: #d4d2cc;
+    --text: #1c1917;
+    --text-muted: #78716c;
+    --text-faint: #a8a29e;
+    --bar-track: #ebe9e3;
+    --accent: #1c1917;
+    --accent-text: #fafaf7;
+    --modal-overlay: rgba(28,25,23,0.4);
+    --good: #15803d;
+    --warn: #b45309;
+    --bad: #b91c1c;
+    --neutral: #57534e;
+  }
+  html[data-theme="dark"] {
+    --bg: #0f0f0f;
+    --surface: #1a1a1a;
+    --surface-alt: #222;
+    --border: #2a2a2a;
+    --border-hover: #3a3a3a;
+    --text: #f5f5f4;
+    --text-muted: #a8a29e;
+    --text-faint: #57534e;
+    --bar-track: #262626;
+    --accent: #fafaf9;
+    --accent-text: #0f0f0f;
+    --modal-overlay: rgba(0,0,0,0.6);
+    --good: #4ade80;
+    --warn: #fbbf24;
+    --bad: #f87171;
+    --neutral: #a8a29e;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { min-height: 100%; }
+  body {
+    background: #fafaf7;
+    background: var(--bg);
+    color: #1c1917;
+    color: var(--text);
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  .container { max-width: 1024px; margin: 0 auto; padding: 24px 16px; }
+  @media (min-width: 640px) { .container { padding: 40px 24px; } }
+
+  #error-banner {
+    display: none;
+    background: #fee;
+    border: 1px solid #f99;
+    color: #900;
+    padding: 12px;
+    margin-bottom: 16px;
+    font-size: 12px;
+    font-family: monospace;
+    word-wrap: break-word;
+  }
+
+  header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding-bottom: 20px;
+    margin-bottom: 24px;
+    border-bottom: 1px solid #e7e5e0;
+    border-bottom-color: var(--border);
+  }
+  @media (min-width: 640px) { header { padding-bottom: 24px; margin-bottom: 32px; } }
+  .eyebrow {
+    font-size: 9px;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: #78716c;
+    color: var(--text-muted);
+    margin-bottom: 6px;
+  }
+  @media (min-width: 640px) { .eyebrow { font-size: 10px; } }
+  .title {
+    font-family: 'Cormorant Garamond', serif;
+    font-weight: 400;
+    font-size: 40px;
+    line-height: 1;
+    color: #1c1917;
+    color: var(--text);
+  }
+  .title .dot { font-style: italic; color: #a8a29e; color: var(--text-faint); }
+  @media (min-width: 640px) { .title { font-size: 56px; } }
+  .header-actions { display: flex; gap: 4px; align-items: center; }
+  .icon-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 10px;
+    border-radius: 999px;
+    color: inherit;
+    opacity: 0.7;
+  }
+  .icon-btn:hover { opacity: 1; }
+
+  /* Date selector / calendar */
+  .date-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 12px 0;
+    margin-bottom: 24px;
+    border-bottom: 1px solid #e7e5e0;
+    border-bottom-color: var(--border);
+  }
+  @media (min-width: 640px) { .date-bar { margin-bottom: 32px; } }
+  .date-nav {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: inherit;
+    padding: 8px 12px;
+    opacity: 0.6;
+    font-family: inherit;
+    font-size: 18px;
+    line-height: 1;
+  }
+  .date-nav:hover { opacity: 1; }
+  .date-nav:disabled { opacity: 0.2; cursor: not-allowed; }
+  .date-display {
+    flex: 1;
+    text-align: center;
+    cursor: pointer;
+  }
+  .date-current {
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    font-size: 16px;
+    color: #1c1917;
+    color: var(--text);
+  }
+  @media (min-width: 640px) { .date-current { font-size: 18px; } }
+  .date-label {
+    font-size: 9px;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: #78716c;
+    color: var(--text-muted);
+    margin-top: 2px;
+  }
+  .today-badge {
+    display: inline-block;
+    margin-left: 8px;
+    font-size: 9px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    background: #1c1917;
+    background: var(--accent);
+    color: #fafaf7;
+    color: var(--accent-text);
+    padding: 2px 6px;
+    border-radius: 2px;
+    vertical-align: 1px;
+  }
+
+  /* Calendar dropdown */
+  .calendar {
+    position: absolute;
+    z-index: 40;
+    background: #fff;
+    background: var(--surface);
+    border: 1px solid #e7e5e0;
+    border-color: var(--border);
+    padding: 16px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+    width: 280px;
+    max-width: calc(100vw - 32px);
+  }
+  .cal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+  }
+  .cal-month {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 18px;
+  }
+  .cal-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 2px;
+  }
+  .cal-dow {
+    font-size: 9px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: #a8a29e;
+    color: var(--text-faint);
+    text-align: center;
+    padding: 4px 0;
+  }
+  .cal-day {
+    background: none;
+    border: 1px solid transparent;
+    cursor: pointer;
+    padding: 8px 0;
+    font-family: inherit;
+    font-size: 13px;
+    color: inherit;
+    text-align: center;
+    border-radius: 4px;
+  }
+  .cal-day:hover:not(:disabled) { background: #f5f5f0; background: var(--surface-alt); }
+  .cal-day.empty { cursor: default; }
+  .cal-day.has-data { font-weight: 500; }
+  .cal-day.has-data::after {
+    content: '';
+    display: block;
+    width: 4px;
+    height: 4px;
+    border-radius: 999px;
+    background: #1c1917;
+    background: var(--accent);
+    margin: 2px auto 0;
+  }
+  .cal-day.selected {
+    background: #1c1917;
+    background: var(--accent);
+    color: #fafaf7;
+    color: var(--accent-text);
+  }
+  .cal-day.selected::after { background: #fafaf7; background: var(--accent-text); }
+  .cal-day.today { border-color: #1c1917; border-color: var(--accent); }
+  .cal-day:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+  }
+
+  .section-label {
+    font-size: 9px;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: #78716c;
+    color: var(--text-muted);
+    margin-bottom: 16px;
+  }
+  @media (min-width: 640px) { .section-label { font-size: 10px; margin-bottom: 20px; } }
+
+  /* Progress bars */
+  .bars-section { margin-bottom: 36px; }
+  @media (min-width: 640px) { .bars-section { margin-bottom: 48px; } }
+  .bar-row { display: block; margin-bottom: 18px; }
+  .bar-row:last-child { margin-bottom: 0; }
+  @media (min-width: 640px) { .bar-row { margin-bottom: 22px; } }
+  .bar-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 6px;
+  }
+  .bar-label {
+    font-size: 10px;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    font-weight: 500;
+    color: #78716c;
+    color: var(--text-muted);
+  }
+  @media (min-width: 640px) { .bar-label { font-size: 11px; } }
+  .bar-values {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 18px;
+    color: #1c1917;
+    color: var(--text);
+    white-space: nowrap;
+  }
+  @media (min-width: 640px) { .bar-values { font-size: 20px; } }
+  .bar-values .of {
+    font-family: 'Inter', sans-serif;
+    font-size: 11px;
+    color: #a8a29e;
+    color: var(--text-faint);
+    margin-left: 4px;
+  }
+  .bar-track {
+    position: relative;
+    display: block;
+    width: 100%;
+    height: 8px;
+    background-color: #ebe9e3;
+    border-radius: 999px;
+    overflow: hidden;
+  }
+  html[data-theme="dark"] .bar-track { background-color: #262626; }
+  .bar-fill {
+    display: block;
+    height: 100%;
+    border-radius: 999px;
+    background-color: #57534e;
+    -webkit-transition: width 700ms ease-out, background-color 400ms;
+    transition: width 700ms ease-out, background-color 400ms;
+  }
+  .bar-fill.good { background-color: #15803d; }
+  .bar-fill.warn { background-color: #b45309; }
+  .bar-fill.bad { background-color: #b91c1c; }
+  .bar-fill.neutral { background-color: #57534e; }
+  html[data-theme="dark"] .bar-fill.good { background-color: #4ade80; }
+  html[data-theme="dark"] .bar-fill.warn { background-color: #fbbf24; }
+  html[data-theme="dark"] .bar-fill.bad { background-color: #f87171; }
+  html[data-theme="dark"] .bar-fill.neutral { background-color: #a8a29e; }
+  .bar-status { display: block; font-size: 10px; margin-top: 6px; color: #57534e; }
+  @media (min-width: 640px) { .bar-status { font-size: 11px; } }
+  .bar-status.good { color: #15803d; }
+  .bar-status.warn { color: #b45309; }
+  .bar-status.bad { color: #b91c1c; }
+  .bar-status.faint { color: #a8a29e; color: var(--text-faint); }
+  html[data-theme="dark"] .bar-status.good { color: #4ade80; }
+  html[data-theme="dark"] .bar-status.warn { color: #fbbf24; }
+  html[data-theme="dark"] .bar-status.bad { color: #f87171; }
+
+  /* Form */
+  .form-section { margin-bottom: 32px; }
+  @media (min-width: 640px) { .form-section { margin-bottom: 40px; } }
+  .form-card {
+    background: #fff;
+    background: var(--surface);
+    border: 1px solid #e7e5e0;
+    border-color: var(--border);
+    padding: 16px;
+  }
+  @media (min-width: 640px) { .form-card { padding: 24px; } }
+  .name-input {
+    width: 100%;
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid #e7e5e0;
+    border-bottom-color: var(--border);
+    padding: 0 0 8px 0;
+    margin-bottom: 16px;
+    font-family: 'Cormorant Garamond', serif;
+    font-weight: 400;
+    font-size: 20px;
+    color: inherit;
+    outline: none;
+  }
+  @media (min-width: 640px) { .name-input { font-size: 24px; padding-bottom: 12px; margin-bottom: 20px; } }
+  .name-input::placeholder { color: #a8a29e; opacity: 0.6; }
+  .macros-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  @media (min-width: 640px) { .macros-grid { grid-template-columns: 1fr 1fr 1fr 1fr; } }
+  .macros-grid label {
+    display: block;
+    font-size: 9px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: #a8a29e;
+    color: var(--text-faint);
+    margin-bottom: 4px;
+  }
+  .num-input {
+    width: 100%;
+    background: #f5f5f0;
+    background: var(--surface-alt);
+    border: 1px solid #e7e5e0;
+    border-color: var(--border);
+    color: inherit;
+    padding: 10px 12px;
+    font-size: 16px;
+    outline: none;
+    font-family: inherit;
+  }
+  .num-input::-webkit-inner-spin-button,
+  .num-input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+  .record-btn {
+    margin-top: 16px;
+    width: 100%;
+    padding: 12px;
+    background: #1c1917;
+    background: var(--accent);
+    color: #fafaf7;
+    color: var(--accent-text);
+    border: none;
+    cursor: pointer;
+    font-size: 12px;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    font-weight: 500;
+    font-family: inherit;
+  }
+  @media (min-width: 640px) { .record-btn { margin-top: 20px; padding: 14px; } }
+  .record-btn:disabled { opacity: 0.3; }
+  .form-disabled {
+    opacity: 0.5;
+    pointer-events: none;
+  }
+  .form-disabled-message {
+    text-align: center;
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    font-size: 14px;
+    color: #78716c;
+    color: var(--text-muted);
+    margin-top: 8px;
+  }
+
+  /* Library */
+  .library-section { margin-bottom: 32px; }
+  @media (min-width: 640px) { .library-section { margin-bottom: 40px; } }
+  .library-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .saved-food {
+    display: inline-flex;
+    align-items: center;
+    background: #fff;
+    background: var(--surface);
+    border: 1px solid #e7e5e0;
+    border-color: var(--border);
+    border-radius: 999px;
+    padding: 0;
+    overflow: hidden;
+  }
+  .saved-food .pill-add {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 8px 14px;
+    color: inherit;
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 15px;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .saved-food .pill-cal {
+    font-family: 'Inter', sans-serif;
+    font-size: 10px;
+    color: #a8a29e;
+    color: var(--text-faint);
+    margin-left: 4px;
+  }
+  .saved-food .pill-remove {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 8px 10px 8px 4px;
+    color: #a8a29e;
+    color: var(--text-faint);
+    border-left: 1px solid #e7e5e0;
+    border-left-color: var(--border);
+    display: flex;
+    align-items: center;
+  }
+
+  .entries-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 12px; }
+  .entries-count { color: #a8a29e; color: var(--text-faint); }
+  .empty-state {
+    border: 1px dashed #e7e5e0;
+    border-color: var(--border);
+    padding: 48px 16px;
+    text-align: center;
+  }
+  .empty-state p {
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    font-size: 16px;
+    color: #78716c;
+    color: var(--text-muted);
+  }
+  .empty-state span {
+    display: block;
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: #a8a29e;
+    color: var(--text-faint);
+    margin-top: 8px;
+  }
+  ul.entries { list-style: none; background: #e7e5e0; background: var(--border); }
+  ul.entries li {
+    background: #fff;
+    background: var(--surface);
+    padding: 14px 16px;
+    display: flex;
+    align-items: center;
+    margin-bottom: 1px;
+  }
+  ul.entries li:last-child { margin-bottom: 0; }
+  .entry-info { flex: 1; min-width: 0; }
+  .entry-name {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 16px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .entry-macros {
+    font-size: 10px;
+    margin-top: 2px;
+    color: #78716c;
+    color: var(--text-muted);
+  }
+  .entry-macros .v { color: inherit; font-weight: 500; }
+  .delete-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #a8a29e;
+    color: var(--text-faint);
+    padding: 8px;
+    margin-left: 8px;
+  }
+
+  .footnote {
+    text-align: center;
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    font-size: 10px;
+    color: #a8a29e;
+    color: var(--text-faint);
+    margin-top: 40px;
+  }
+
+  /* Modal */
+  .modal-overlay {
+    position: fixed;
+    top: 0; right: 0; bottom: 0; left: 0;
+    background: rgba(28,25,23,0.4);
+    background: var(--modal-overlay);
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    z-index: 50;
+  }
+  @media (min-width: 640px) { .modal-overlay { align-items: center; padding: 16px; } }
+  .modal {
+    background: #fafaf7;
+    background: var(--bg);
+    border: 1px solid #e7e5e0;
+    border-color: var(--border);
+    width: 100%;
+    padding: 24px;
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+  @media (min-width: 640px) { .modal { max-width: 480px; padding: 32px; } }
+  .modal-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; }
+  .modal-title { font-family: 'Cormorant Garamond', serif; font-size: 24px; }
+  .modal-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #e7e5e0;
+    border-bottom-color: var(--border);
+    padding-bottom: 10px;
+    margin-bottom: 12px;
+  }
+  .modal-row:last-of-type { border-bottom: none; margin-bottom: 0; }
+  .modal-row label {
+    font-size: 11px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: #78716c;
+    color: var(--text-muted);
+  }
+  .goal-input {
+    width: 96px;
+    text-align: right;
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid #d4d2cc;
+    border-bottom-color: var(--border-hover);
+    color: inherit;
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 20px;
+    padding: 2px 4px;
+    outline: none;
+  }
+  .modal .unit { font-size: 13px; color: #a8a29e; color: var(--text-faint); margin-left: 4px; width: 24px; }
+  .modal-save {
+    margin-top: 24px;
+    width: 100%;
+    padding: 12px;
+    background: #1c1917;
+    background: var(--accent);
+    color: #fafaf7;
+    color: var(--accent-text);
+    border: none;
+    cursor: pointer;
+    font-size: 12px;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    font-family: inherit;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <div id="error-banner"></div>
+
+  <header>
+    <div>
+      <div class="eyebrow">Daily Ledger</div>
+      <h1 class="title">Nourish<span class="dot">.</span></h1>
+    </div>
+    <div class="header-actions">
+      <button class="icon-btn" id="theme-btn" type="button" aria-label="Toggle theme">
+        <svg id="theme-icon" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+      </button>
+      <button class="icon-btn" id="settings-btn" type="button" aria-label="Settings">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <div class="date-bar">
+    <button class="date-nav" id="date-prev" type="button" aria-label="Previous day">‹</button>
+    <div class="date-display" id="date-display">
+      <div class="date-current" id="date-current">Today</div>
+      <div class="date-label" id="date-label">tap to choose date</div>
+    </div>
+    <button class="date-nav" id="date-next" type="button" aria-label="Next day">›</button>
+  </div>
+
+  <div id="calendar-container"></div>
+
+  <section class="bars-section">
+    <div class="section-label">Targets</div>
+    <div id="bars-list">
+      <!-- Pre-rendered static bars (visible BEFORE any JS runs) -->
+      <div class="bar-row">
+        <div class="bar-meta"><span class="bar-label">Calories</span><span class="bar-values" data-current="calories">0<span class="of">/ 1800</span></span></div>
+        <div class="bar-track"><div class="bar-fill good" data-fill="calories" style="width:0%"></div></div>
+        <div class="bar-status good" data-status="calories">1800 left</div>
+      </div>
+      <div class="bar-row">
+        <div class="bar-meta"><span class="bar-label">Protein</span><span class="bar-values" data-current="protein">0g<span class="of">/ 180g</span></span></div>
+        <div class="bar-track"><div class="bar-fill neutral" data-fill="protein" style="width:0%"></div></div>
+        <div class="bar-status faint" data-status="protein">180g to go</div>
+      </div>
+      <div class="bar-row">
+        <div class="bar-meta"><span class="bar-label">Carbs</span><span class="bar-values" data-current="carbs">0g<span class="of">/ 200g</span></span></div>
+        <div class="bar-track"><div class="bar-fill good" data-fill="carbs" style="width:0%"></div></div>
+        <div class="bar-status good" data-status="carbs">200g left</div>
+      </div>
+      <div class="bar-row">
+        <div class="bar-meta"><span class="bar-label">Fat</span><span class="bar-values" data-current="fat">0g<span class="of">/ 60g</span></span></div>
+        <div class="bar-track"><div class="bar-fill good" data-fill="fat" style="width:0%"></div></div>
+        <div class="bar-status good" data-status="fat">60g left</div>
+      </div>
+      <div class="bar-row">
+        <div class="bar-meta"><span class="bar-label">Fiber</span><span class="bar-values" data-current="fiber">0g<span class="of">/ 40g</span></span></div>
+        <div class="bar-track"><div class="bar-fill neutral" data-fill="fiber" style="width:0%"></div></div>
+        <div class="bar-status faint" data-status="fiber">40g to go</div>
+      </div>
+      <div class="bar-row">
+        <div class="bar-meta"><span class="bar-label">Sugar</span><span class="bar-values" data-current="sugar">0g<span class="of">/ 40g</span></span></div>
+        <div class="bar-track"><div class="bar-fill good" data-fill="sugar" style="width:0%"></div></div>
+        <div class="bar-status good" data-status="sugar">40g left</div>
+      </div>
+      <div class="bar-row">
+        <div class="bar-meta"><span class="bar-label">Cholesterol</span><span class="bar-values" data-current="cholesterol">0mg<span class="of">/ 300mg</span></span></div>
+        <div class="bar-track"><div class="bar-fill good" data-fill="cholesterol" style="width:0%"></div></div>
+        <div class="bar-status good" data-status="cholesterol">300mg left</div>
+      </div>
+      <div class="bar-row">
+        <div class="bar-meta"><span class="bar-label">Sodium</span><span class="bar-values" data-current="sodium">0mg<span class="of">/ 2000mg</span></span></div>
+        <div class="bar-track"><div class="bar-fill good" data-fill="sodium" style="width:0%"></div></div>
+        <div class="bar-status good" data-status="sodium">2000mg left</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="form-section" id="form-section">
+    <div class="section-label">Add an Entry</div>
+    <div class="form-card" id="form-card">
+      <input id="name" class="name-input" placeholder="What did you eat?" />
+      <div class="macros-grid">
+        <div><label>Cal</label><input id="m-calories" class="num-input" type="number" inputmode="decimal" placeholder="0" /></div>
+        <div><label>Protein (g)</label><input id="m-protein" class="num-input" type="number" inputmode="decimal" placeholder="0" /></div>
+        <div><label>Carbs (g)</label><input id="m-carbs" class="num-input" type="number" inputmode="decimal" placeholder="0" /></div>
+        <div><label>Fat (g)</label><input id="m-fat" class="num-input" type="number" inputmode="decimal" placeholder="0" /></div>
+        <div><label>Fiber (g)</label><input id="m-fiber" class="num-input" type="number" inputmode="decimal" placeholder="0" /></div>
+        <div><label>Sugar (g)</label><input id="m-sugar" class="num-input" type="number" inputmode="decimal" placeholder="0" /></div>
+        <div><label>Cholesterol (mg)</label><input id="m-cholesterol" class="num-input" type="number" inputmode="decimal" placeholder="0" /></div>
+        <div><label>Sodium (mg)</label><input id="m-sodium" class="num-input" type="number" inputmode="decimal" placeholder="0" /></div>
+      </div>
+      <button class="record-btn" id="record-btn" type="button" disabled>+ Record</button>
+    </div>
+    <div class="form-disabled-message" id="form-disabled-message" style="display:none;">Viewing a past day · entries are read-only</div>
+  </section>
+
+  <section class="library-section" id="library-section" style="display:none;">
+    <div class="section-label">Saved Foods <span class="entries-count" id="library-count"></span></div>
+    <div class="library-grid" id="library-grid"></div>
+  </section>
+
+  <section>
+    <div class="entries-header">
+      <div class="section-label" style="margin: 0;"><span id="entries-heading">Today's Entries</span> <span class="entries-count" id="entries-count"></span></div>
+    </div>
+    <div id="entries-area"></div>
+  </section>
+
+  <p class="footnote">Resets at the dawn of each new day.</p>
+</div>
+
+<div id="modal-root"></div>
+
+<script>
+window.onerror = function(msg, src, line) {
+  try {
+    var b = document.getElementById('error-banner');
+    if (b) { b.style.display = 'block'; b.textContent = 'Error line ' + line + ': ' + msg; }
+  } catch (e) {}
+  return false;
+};
+
+function nourishInit() {
+try {
+  var STORAGE_PREFIX = 'nourish:';
+
+  function pad(n) { n = String(n); return n.length < 2 ? '0' + n : n; }
+  function dateToKey(d) { return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); }
+  function todayDate() { var d = new Date(); d.setHours(0,0,0,0); return d; }
+  function keyToDate(key) {
+    var parts = key.split('-');
+    return new Date(parseInt(parts[0],10), parseInt(parts[1],10) - 1, parseInt(parts[2],10));
+  }
+  function foodsKey(dateKey) { return STORAGE_PREFIX + 'foods:' + dateKey; }
+
+  function lsGet(k) { try { return window.localStorage ? window.localStorage.getItem(k) : null; } catch (e) { return null; } }
+  function lsSet(k, v) { try { if (window.localStorage) window.localStorage.setItem(k, v); } catch (e) {} }
+  function lsRemove(k) { try { if (window.localStorage) window.localStorage.removeItem(k); } catch (e) {} }
+  function lsKeys() {
+    var keys = [];
+    try {
+      if (!window.localStorage) return keys;
+      for (var i = 0; i < window.localStorage.length; i++) {
+        var k = window.localStorage.key(i);
+        if (k) keys.push(k);
+      }
+    } catch (e) {}
+    return keys;
+  }
+
+  var defaultGoals = {
+    calories: 1800, protein: 180, carbs: 200, fat: 60,
+    fiber: 40, sugar: 40, cholesterol: 300, sodium: 2000
+  };
+
+  var macroMeta = [
+    { key: 'calories', label: 'Calories', unit: '', type: 'limit' },
+    { key: 'protein', label: 'Protein', unit: 'g', type: 'target' },
+    { key: 'carbs', label: 'Carbs', unit: 'g', type: 'limit' },
+    { key: 'fat', label: 'Fat', unit: 'g', type: 'limit' },
+    { key: 'fiber', label: 'Fiber', unit: 'g', type: 'target' },
+    { key: 'sugar', label: 'Sugar', unit: 'g', type: 'limit' },
+    { key: 'cholesterol', label: 'Cholesterol', unit: 'mg', type: 'limit' },
+    { key: 'sodium', label: 'Sodium', unit: 'mg', type: 'limit' }
+  ];
+
+  // State
+  var selectedDate = todayDate();
+  var foods = []; // foods for currently selected date
+
+  var goals = {};
+  for (var dk in defaultGoals) if (defaultGoals.hasOwnProperty(dk)) goals[dk] = defaultGoals[dk];
+  try {
+    var rawGoals = lsGet(STORAGE_PREFIX + 'goals');
+    if (rawGoals) {
+      var parsed = JSON.parse(rawGoals);
+      if (parsed && typeof parsed === 'object') {
+        for (var gk in parsed) if (parsed.hasOwnProperty(gk)) goals[gk] = parsed[gk];
+      }
+    }
+  } catch (e) {}
+
+  var dark = lsGet(STORAGE_PREFIX + 'theme') === 'dark';
+
+  var library = [];
+  try {
+    var rawLib = lsGet(STORAGE_PREFIX + 'library');
+    if (rawLib) library = JSON.parse(rawLib) || [];
+  } catch (e) { library = []; }
+
+  function loadFoodsForDate(d) {
+    var raw = lsGet(foodsKey(dateToKey(d)));
+    try { return raw ? (JSON.parse(raw) || []) : []; } catch (e) { return []; }
+  }
+
+  function saveFoodsForDate(d, list) { lsSet(foodsKey(dateToKey(d)), JSON.stringify(list)); }
+
+  function totals() {
+    var t = {};
+    for (var i = 0; i < macroMeta.length; i++) t[macroMeta[i].key] = 0;
+    for (var j = 0; j < foods.length; j++) {
+      var f = foods[j];
+      for (var m = 0; m < macroMeta.length; m++) {
+        var key = macroMeta[m].key;
+        t[key] += (Number(f[key]) || 0);
+      }
+    }
+    return t;
+  }
+
+  function getStatusClass(meta, current, goal) {
+    if (!goal || goal <= 0) return { fill: 'neutral', status: 'faint', text: '—' };
+    var pct = current / goal;
+    var diff = current - goal;
+    var round = function(n) { return Math.round(n); };
+    if (meta.type === 'limit') {
+      if (pct >= 1) return { fill: 'bad', status: 'bad', text: '+' + round(diff) + meta.unit + ' over' };
+      if (pct >= 0.85) return { fill: 'warn', status: 'warn', text: round(Math.abs(diff)) + meta.unit + ' left' };
+      return { fill: 'good', status: 'good', text: round(Math.abs(diff)) + meta.unit + ' left' };
+    } else {
+      if (pct >= 1) return { fill: 'good', status: 'good', text: pct > 1 ? 'goal met · +' + round(diff) + meta.unit : 'goal met' };
+      return { fill: 'neutral', status: 'faint', text: round(Math.abs(diff)) + meta.unit + ' to go' };
+    }
+  }
+
+  function escapeHtml(s) {
+    return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  }
+
+  // UPDATE the existing pre-rendered bars in place — never blow them away
+  function renderBars() {
+    var t = totals();
+    for (var i = 0; i < macroMeta.length; i++) {
+      var m = macroMeta[i];
+      var current = t[m.key] || 0;
+      var goal = goals[m.key] || 0;
+      var pct = goal > 0 ? Math.min(current / goal, 1) : 0;
+      var widthPct = (pct * 100).toFixed(2);
+      var status = getStatusClass(m, current, goal);
+
+      var valEl = document.querySelector('[data-current="' + m.key + '"]');
+      var fillEl = document.querySelector('[data-fill="' + m.key + '"]');
+      var statusEl = document.querySelector('[data-status="' + m.key + '"]');
+
+      if (valEl) valEl.innerHTML = Math.round(current) + m.unit + '<span class="of">/ ' + goal + m.unit + '</span>';
+      if (fillEl) {
+        fillEl.className = 'bar-fill ' + status.fill;
+        fillEl.style.width = widthPct + '%';
+      }
+      if (statusEl) {
+        statusEl.className = 'bar-status ' + status.status;
+        statusEl.textContent = status.text;
+      }
+    }
+  }
+
+  function renderEntries() {
+    var area = document.getElementById('entries-area');
+    var count = document.getElementById('entries-count');
+    if (!area || !count) return;
+    count.textContent = foods.length > 0 ? '— ' + foods.length : '';
+    if (foods.length === 0) {
+      area.innerHTML = '<div class="empty-state"><p>No entries on this day.</p><span>' + (isToday(selectedDate) ? 'Begin above' : 'Nothing recorded') + '</span></div>';
+      return;
+    }
+    var html = '<ul class="entries">';
+    for (var i = 0; i < foods.length; i++) {
+      var f = foods[i];
+      html += '<li>';
+      html +=   '<div class="entry-info">';
+      html +=     '<div class="entry-name">' + escapeHtml(f.name) + '</div>';
+      html +=     '<div class="entry-macros">';
+      html +=       '<span class="v">' + (f.calories || 0) + '</span> cal · ';
+      html +=       'P <span class="v">' + (f.protein || 0) + 'g</span> · ';
+      html +=       'C <span class="v">' + (f.carbs || 0) + 'g</span> · ';
+      html +=       'F <span class="v">' + (f.fat || 0) + 'g</span> · ';
+      html +=       'Fib <span class="v">' + (f.fiber || 0) + 'g</span> · ';
+      html +=       'Sug <span class="v">' + (f.sugar || 0) + 'g</span> · ';
+      html +=       'Chol <span class="v">' + (f.cholesterol || 0) + 'mg</span> · ';
+      html +=       'Sod <span class="v">' + (f.sodium || 0) + 'mg</span>';
+      html +=     '</div>';
+      html +=   '</div>';
+      html +=   '<button class="delete-btn" type="button" data-id="' + f.id + '" aria-label="Remove"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-2 14a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2L5 6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>';
+      html += '</li>';
+    }
+    html += '</ul>';
+    area.innerHTML = html;
+
+    var btns = area.querySelectorAll('.delete-btn');
+    for (var b = 0; b < btns.length; b++) {
+      btns[b].onclick = function() { removeFood(Number(this.getAttribute('data-id'))); };
+    }
+  }
+
+  function isToday(d) { return dateToKey(d) === dateToKey(todayDate()); }
+
+  function applyTheme() {
+    document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
+    var icon = document.getElementById('theme-icon');
+    if (!icon) return;
+    icon.innerHTML = dark
+      ? '<circle cx="12" cy="12" r="4"/><line x1="12" y1="2" x2="12" y2="4"/><line x1="12" y1="20" x2="12" y2="22"/><line x1="4.93" y1="4.93" x2="6.34" y2="6.34"/><line x1="17.66" y1="17.66" x2="19.07" y2="19.07"/><line x1="2" y1="12" x2="4" y2="12"/><line x1="20" y1="12" x2="22" y2="12"/><line x1="4.93" y1="19.07" x2="6.34" y2="17.66"/><line x1="17.66" y1="6.34" x2="19.07" y2="4.93"/>'
+      : '<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>';
+  }
+
+  function formatDateDisplay(d) {
+    var months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+    var days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+    return days[d.getDay()] + ', ' + months[d.getMonth()] + ' ' + d.getDate();
+  }
+
+  function setSelectedDate(d) {
+    var newDate = new Date(d);
+    newDate.setHours(0,0,0,0);
+    var today = todayDate();
+    // Don't allow future dates
+    if (newDate.getTime() > today.getTime()) newDate = today;
+    selectedDate = newDate;
+    foods = loadFoodsForDate(selectedDate);
+
+    // Update date display
+    var current = document.getElementById('date-current');
+    var label = document.getElementById('date-label');
+    var heading = document.getElementById('entries-heading');
+    if (current) {
+      var todayBadge = isToday(selectedDate) ? '<span class="today-badge">Today</span>' : '';
+      current.innerHTML = formatDateDisplay(selectedDate) + todayBadge;
+    }
+    if (label) label.textContent = 'tap to choose date';
+    if (heading) heading.textContent = isToday(selectedDate) ? "Today's Entries" : 'Entries';
+
+    // Disable next button if at today
+    var nextBtn = document.getElementById('date-next');
+    if (nextBtn) nextBtn.disabled = isToday(selectedDate);
+
+    // Lock form for past days
+    var formCard = document.getElementById('form-card');
+    var formMsg = document.getElementById('form-disabled-message');
+    var librarySection = document.getElementById('library-section');
+    if (isToday(selectedDate)) {
+      if (formCard) formCard.classList.remove('form-disabled');
+      if (formMsg) formMsg.style.display = 'none';
+      if (librarySection && library.length > 0) librarySection.style.display = 'block';
+    } else {
+      if (formCard) formCard.classList.add('form-disabled');
+      if (formMsg) formMsg.style.display = 'block';
+      if (librarySection) librarySection.style.display = 'none';
+    }
+
+    renderBars();
+    renderEntries();
+    closeCalendar();
+  }
+
+  function changeDay(delta) {
+    var d = new Date(selectedDate);
+    d.setDate(d.getDate() + delta);
+    setSelectedDate(d);
+  }
+
+  // Calendar
+  var calendarMonth = null; // Date pointing to first of displayed month
+  var calendarOpen = false;
+
+  function getDatesWithData() {
+    var dates = {};
+    var keys = lsKeys();
+    var prefix = STORAGE_PREFIX + 'foods:';
+    for (var i = 0; i < keys.length; i++) {
+      if (keys[i].indexOf(prefix) === 0) {
+        var dk = keys[i].substring(prefix.length);
+        // Only count if actually has entries
+        try {
+          var raw = lsGet(keys[i]);
+          var arr = raw ? JSON.parse(raw) : [];
+          if (arr && arr.length > 0) dates[dk] = true;
+        } catch (e) {}
+      }
+    }
+    return dates;
+  }
+
+  function renderCalendar() {
+    var container = document.getElementById('calendar-container');
+    if (!container) return;
+    if (!calendarOpen) { container.innerHTML = ''; return; }
+
+    if (!calendarMonth) {
+      calendarMonth = new Date(selectedDate);
+      calendarMonth.setDate(1);
+    }
+
+    var year = calendarMonth.getFullYear();
+    var month = calendarMonth.getMonth();
+    var firstDow = new Date(year, month, 1).getDay();
+    var daysInMonth = new Date(year, month + 1, 0).getDate();
+    var months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+    var dows = ['S','M','T','W','T','F','S'];
+    var datesWithData = getDatesWithData();
+    var todayKey2 = dateToKey(todayDate());
+    var selKey = dateToKey(selectedDate);
+
+    var html = '<div class="calendar" id="calendar">';
+    html +=   '<div class="cal-header">';
+    html +=     '<button type="button" class="date-nav" id="cal-prev">‹</button>';
+    html +=     '<div class="cal-month">' + months[month] + ' ' + year + '</div>';
+    html +=     '<button type="button" class="date-nav" id="cal-next">›</button>';
+    html +=   '</div>';
+    html +=   '<div class="cal-grid">';
+    for (var d = 0; d < 7; d++) html += '<div class="cal-dow">' + dows[d] + '</div>';
+    for (var e = 0; e < firstDow; e++) html += '<button type="button" class="cal-day empty" disabled></button>';
+    for (var dn = 1; dn <= daysInMonth; dn++) {
+      var thisKey = year + '-' + pad(month + 1) + '-' + pad(dn);
+      var classes = 'cal-day';
+      if (datesWithData[thisKey]) classes += ' has-data';
+      if (thisKey === selKey) classes += ' selected';
+      if (thisKey === todayKey2) classes += ' today';
+      var thisDate = new Date(year, month, dn);
+      var disabled = thisDate.getTime() > todayDate().getTime() ? ' disabled' : '';
+      html += '<button type="button" class="' + classes + '" data-date="' + thisKey + '"' + disabled + '>' + dn + '</button>';
+    }
+    html +=   '</div>';
+    html += '</div>';
+    container.innerHTML = html;
+
+    document.getElementById('cal-prev').onclick = function() {
+      calendarMonth = new Date(year, month - 1, 1);
+      renderCalendar();
+    };
+    document.getElementById('cal-next').onclick = function() {
+      calendarMonth = new Date(year, month + 1, 1);
+      renderCalendar();
+    };
+    var dayBtns = container.querySelectorAll('.cal-day:not(.empty):not(:disabled)');
+    for (var db = 0; db < dayBtns.length; db++) {
+      dayBtns[db].onclick = function() { setSelectedDate(keyToDate(this.getAttribute('data-date'))); };
+    }
+  }
+
+  function openCalendar() {
+    calendarOpen = true;
+    calendarMonth = new Date(selectedDate);
+    calendarMonth.setDate(1);
+    renderCalendar();
+  }
+  function closeCalendar() {
+    calendarOpen = false;
+    var c = document.getElementById('calendar-container');
+    if (c) c.innerHTML = '';
+  }
+  function toggleCalendar() {
+    if (calendarOpen) closeCalendar(); else openCalendar();
+  }
+
+  // Library
+  function saveLibrary() { lsSet(STORAGE_PREFIX + 'library', JSON.stringify(library)); }
+
+  function addToLibrary(food) {
+    var lc = food.name.toLowerCase();
+    var newLib = [];
+    for (var i = 0; i < library.length; i++) {
+      if (library[i].name.toLowerCase() !== lc) newLib.push(library[i]);
+    }
+    newLib.unshift({
+      name: food.name,
+      calories: food.calories || 0, protein: food.protein || 0, carbs: food.carbs || 0,
+      fat: food.fat || 0, fiber: food.fiber || 0, sugar: food.sugar || 0,
+      cholesterol: food.cholesterol || 0, sodium: food.sodium || 0
+    });
+    library = newLib;
+    saveLibrary();
+  }
+
+  function removeFromLibrary(name) {
+    var lc = name.toLowerCase();
+    var newLib = [];
+    for (var i = 0; i < library.length; i++) {
+      if (library[i].name.toLowerCase() !== lc) newLib.push(library[i]);
+    }
+    library = newLib;
+    saveLibrary();
+  }
+
+  function quickAdd(name) {
+    if (!isToday(selectedDate)) return;
+    var lc = name.toLowerCase();
+    var template = null;
+    for (var i = 0; i < library.length; i++) {
+      if (library[i].name.toLowerCase() === lc) { template = library[i]; break; }
+    }
+    if (!template) return;
+    var entry = {
+      id: Date.now(), name: template.name,
+      calories: template.calories, protein: template.protein, carbs: template.carbs,
+      fat: template.fat, fiber: template.fiber, sugar: template.sugar,
+      cholesterol: template.cholesterol, sodium: template.sodium
+    };
+    foods.unshift(entry);
+    saveFoodsForDate(selectedDate, foods);
+    renderBars();
+    renderEntries();
+  }
+
+  function renderLibrary() {
+    var section = document.getElementById('library-section');
+    var grid = document.getElementById('library-grid');
+    var count = document.getElementById('library-count');
+    if (!section || !grid) return;
+
+    if (library.length === 0 || !isToday(selectedDate)) {
+      section.style.display = 'none';
+      return;
+    }
+    section.style.display = 'block';
+    count.textContent = '— ' + library.length;
+
+    var html = '';
+    for (var i = 0; i < library.length; i++) {
+      var item = library[i];
+      html += '<div class="saved-food">';
+      html +=   '<button type="button" class="pill-add" data-name="' + escapeHtml(item.name) + '">+ ' + escapeHtml(item.name) + '<span class="pill-cal">' + Math.round(item.calories || 0) + ' cal</span></button>';
+      html +=   '<button type="button" class="pill-remove" data-name="' + escapeHtml(item.name) + '" aria-label="Remove from library"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>';
+      html += '</div>';
+    }
+    grid.innerHTML = html;
+
+    var addBtns = grid.querySelectorAll('.pill-add');
+    for (var a = 0; a < addBtns.length; a++) addBtns[a].onclick = function() { quickAdd(this.getAttribute('data-name')); };
+    var removeBtns = grid.querySelectorAll('.pill-remove');
+    for (var r = 0; r < removeBtns.length; r++) removeBtns[r].onclick = function() { removeFromLibrary(this.getAttribute('data-name')); renderLibrary(); };
+  }
+
+  function saveGoals() { lsSet(STORAGE_PREFIX + 'goals', JSON.stringify(goals)); }
+  function saveTheme() { lsSet(STORAGE_PREFIX + 'theme', dark ? 'dark' : 'light'); }
+
+  function addFood() {
+    if (!isToday(selectedDate)) return;
+    var nameEl = document.getElementById('name');
+    var name = nameEl.value.replace(/^\s+|\s+$/g, '');
+    if (!name) return;
+    var entry = { id: Date.now(), name: name };
+    for (var i = 0; i < macroMeta.length; i++) {
+      var key = macroMeta[i].key;
+      entry[key] = parseFloat(document.getElementById('m-' + key).value) || 0;
+    }
+    foods.unshift(entry);
+    saveFoodsForDate(selectedDate, foods);
+    addToLibrary(entry);
+    nameEl.value = '';
+    for (var j = 0; j < macroMeta.length; j++) document.getElementById('m-' + macroMeta[j].key).value = '';
+    document.getElementById('record-btn').disabled = true;
+    renderBars();
+    renderEntries();
+    renderLibrary();
+  }
+
+  function removeFood(id) {
+    var newFoods = [];
+    for (var i = 0; i < foods.length; i++) {
+      if (foods[i].id !== id) newFoods.push(foods[i]);
+    }
+    foods = newFoods;
+    saveFoodsForDate(selectedDate, foods);
+    renderBars();
+    renderEntries();
+  }
+
+  function openSettings() {
+    var root = document.getElementById('modal-root');
+    var html = '<div class="modal-overlay" id="modal-overlay">';
+    html +=   '<div class="modal">';
+    html +=     '<div class="modal-header">';
+    html +=       '<div><div class="eyebrow">Configure</div><h2 class="modal-title">Daily Targets</h2></div>';
+    html +=       '<button class="icon-btn" id="modal-close" type="button" aria-label="Close"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>';
+    html +=     '</div>';
+    html +=     '<div id="modal-body">';
+    for (var i = 0; i < macroMeta.length; i++) {
+      var m = macroMeta[i];
+      var fullLabel = m.key === 'carbs' ? 'Carbohydrates' : m.label;
+      html += '<div class="modal-row"><label>' + fullLabel + '</label><div style="display:flex;align-items:baseline;"><input class="goal-input" type="number" inputmode="decimal" data-key="' + m.key + '" value="' + (goals[m.key] || 0) + '" /><span class="unit">' + m.unit + '</span></div></div>';
+    }
+    html +=     '</div>';
+    html +=     '<button class="modal-save" id="modal-save" type="button">Save &amp; Close</button>';
+    html +=   '</div>';
+    html += '</div>';
+    root.innerHTML = html;
+
+    function close() {
+      var inputs = document.querySelectorAll('.goal-input');
+      for (var i = 0; i < inputs.length; i++) {
+        var v = parseFloat(inputs[i].value) || 0;
+        goals[inputs[i].getAttribute('data-key')] = v;
+      }
+      saveGoals();
+      renderBars();
+      root.innerHTML = '';
+    }
+    document.getElementById('modal-overlay').onclick = function(e) { if (e.target.id === 'modal-overlay') close(); };
+    document.getElementById('modal-close').onclick = close;
+    document.getElementById('modal-save').onclick = close;
+  }
+
+  // Wire up
+  applyTheme();
+  setSelectedDate(todayDate());
+  renderLibrary();
+
+  document.getElementById('theme-btn').onclick = function() {
+    dark = !dark;
+    saveTheme();
+    applyTheme();
+    renderBars();
+  };
+  document.getElementById('settings-btn').onclick = openSettings;
+  document.getElementById('record-btn').onclick = addFood;
+  document.getElementById('date-prev').onclick = function() { changeDay(-1); };
+  document.getElementById('date-next').onclick = function() { changeDay(1); };
+  document.getElementById('date-display').onclick = toggleCalendar;
+
+  var nameInput = document.getElementById('name');
+  nameInput.addEventListener('input', function() {
+    document.getElementById('record-btn').disabled = !nameInput.value.replace(/^\s+|\s+$/g, '');
+  });
+  function onEnter(e) { if (e.key === 'Enter' || e.keyCode === 13) addFood(); }
+  nameInput.addEventListener('keydown', onEnter);
+  for (var mi = 0; mi < macroMeta.length; mi++) {
+    document.getElementById('m-' + macroMeta[mi].key).addEventListener('keydown', onEnter);
+  }
+
+} catch (initErr) {
+  var b = document.getElementById('error-banner');
+  if (b) { b.style.display = 'block'; b.textContent = 'Init error: ' + initErr.message; }
+}
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', nourishInit);
+} else {
+  nourishInit();
+}
+</script>
+</body>
+</html>
