@@ -230,6 +230,15 @@
     background: var(--accent);
     margin: 2px auto 0;
   }
+  .cal-day.has-gym::before {
+    content: '💪';
+    position: absolute;
+    top: 1px;
+    right: 2px;
+    font-size: 7px;
+    line-height: 1;
+  }
+  .cal-day { position: relative; }
   .cal-day.selected {
     background: #1c1917;
     background: var(--accent);
@@ -413,9 +422,102 @@
     margin-top: 8px;
   }
 
+  /* Gym tracker */
+  .gym-section {
+    margin-bottom: 32px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  @media (min-width: 640px) { .gym-section { margin-bottom: 40px; } }
+  .gym-toggle {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+  .gym-checkbox {
+    appearance: none;
+    -webkit-appearance: none;
+    width: 20px;
+    height: 20px;
+    border: 1.5px solid var(--border-hover);
+    border-radius: 4px;
+    background: var(--surface);
+    cursor: pointer;
+    position: relative;
+    flex-shrink: 0;
+    transition: background 200ms, border-color 200ms;
+  }
+  .gym-checkbox:checked {
+    background: var(--accent);
+    border-color: var(--accent);
+  }
+  .gym-checkbox:checked::after {
+    content: '';
+    position: absolute;
+    top: 3px; left: 6px;
+    width: 5px; height: 9px;
+    border: 2px solid var(--accent-text);
+    border-top: none; border-left: none;
+    transform: rotate(45deg);
+  }
+  .gym-label-text {
+    font-size: 10px;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    font-weight: 500;
+    color: var(--text-muted);
+  }
+  .gym-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 9px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    background: var(--accent);
+    color: var(--accent-text);
+    padding: 3px 8px;
+    border-radius: 2px;
+    opacity: 0;
+    transition: opacity 200ms;
+    pointer-events: none;
+  }
+  .gym-badge.visible { opacity: 1; }
+
   /* Library */
   .library-section { margin-bottom: 32px; }
   @media (min-width: 640px) { .library-section { margin-bottom: 40px; } }
+  .library-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+    cursor: pointer;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+  @media (min-width: 640px) { .library-header { margin-bottom: 20px; } }
+  .library-header .section-label { margin-bottom: 0; }
+  .library-chevron {
+    color: var(--text-faint);
+    transition: transform 250ms ease;
+    flex-shrink: 0;
+  }
+  .library-chevron.open { transform: rotate(180deg); }
+  .library-body {
+    overflow: hidden;
+    transition: max-height 300ms ease, opacity 250ms ease;
+    max-height: 0;
+    opacity: 0;
+  }
+  .library-body.open {
+    max-height: 600px;
+    opacity: 1;
+  }
   .library-grid {
     display: flex;
     flex-wrap: wrap;
@@ -704,9 +806,25 @@
   </section>
 
   <section class="library-section" id="library-section" style="display:none;">
-    <div class="section-label">Saved Foods <span class="entries-count" id="library-count"></span></div>
-    <div class="library-grid" id="library-grid"></div>
+    <div class="library-header" id="library-header">
+      <div class="section-label" style="margin:0;">Saved Foods <span class="entries-count" id="library-count"></span></div>
+      <svg class="library-chevron" id="library-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+    </div>
+    <div class="library-body" id="library-body">
+      <div class="library-grid" id="library-grid"></div>
+    </div>
   </section>
+
+  <div class="gym-section" id="gym-section">
+    <label class="gym-toggle">
+      <input type="checkbox" class="gym-checkbox" id="gym-checkbox" />
+      <span class="gym-label-text">Gym day</span>
+    </label>
+    <span class="gym-badge" id="gym-badge">
+      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+      Logged
+    </span>
+  </div>
 
   <section>
     <div class="entries-header">
@@ -958,6 +1076,7 @@ try {
 
     renderBars();
     renderEntries();
+    renderGym();
     closeCalendar();
   }
 
@@ -975,15 +1094,23 @@ try {
     var dates = {};
     var keys = lsKeys();
     var prefix = STORAGE_PREFIX + 'foods:';
+    var gymPrefix = STORAGE_PREFIX + 'gym:';
     for (var i = 0; i < keys.length; i++) {
       if (keys[i].indexOf(prefix) === 0) {
         var dk = keys[i].substring(prefix.length);
-        // Only count if actually has entries
         try {
           var raw = lsGet(keys[i]);
           var arr = raw ? JSON.parse(raw) : [];
-          if (arr && arr.length > 0) dates[dk] = true;
+          if (arr && arr.length > 0) dates[dk] = dates[dk] || {};
+          if (arr && arr.length > 0) dates[dk].food = true;
         } catch (e) {}
+      }
+      if (keys[i].indexOf(gymPrefix) === 0) {
+        var gdk = keys[i].substring(gymPrefix.length);
+        if (lsGet(keys[i]) === '1') {
+          dates[gdk] = dates[gdk] || {};
+          dates[gdk].gym = true;
+        }
       }
     }
     return dates;
@@ -1021,7 +1148,8 @@ try {
     for (var dn = 1; dn <= daysInMonth; dn++) {
       var thisKey = year + '-' + pad(month + 1) + '-' + pad(dn);
       var classes = 'cal-day';
-      if (datesWithData[thisKey]) classes += ' has-data';
+      if (datesWithData[thisKey] && datesWithData[thisKey].food) classes += ' has-data';
+      if (datesWithData[thisKey] && datesWithData[thisKey].gym) classes += ' has-gym';
       if (thisKey === selKey) classes += ' selected';
       if (thisKey === todayKey2) classes += ' today';
       var thisDate = new Date(year, month, dn);
@@ -1110,10 +1238,14 @@ try {
     renderEntries();
   }
 
+  var libraryOpen = false;
+
   function renderLibrary() {
     var section = document.getElementById('library-section');
     var grid = document.getElementById('library-grid');
     var count = document.getElementById('library-count');
+    var chevron = document.getElementById('library-chevron');
+    var body = document.getElementById('library-body');
     if (!section || !grid) return;
 
     if (library.length === 0 || !isToday(selectedDate)) {
@@ -1133,10 +1265,52 @@ try {
     }
     grid.innerHTML = html;
 
+    // Apply open/closed state
+    if (body) {
+      if (libraryOpen) { body.classList.add('open'); } else { body.classList.remove('open'); }
+    }
+    if (chevron) {
+      if (libraryOpen) { chevron.classList.add('open'); } else { chevron.classList.remove('open'); }
+    }
+
     var addBtns = grid.querySelectorAll('.pill-add');
     for (var a = 0; a < addBtns.length; a++) addBtns[a].onclick = function() { quickAdd(this.getAttribute('data-name')); };
     var removeBtns = grid.querySelectorAll('.pill-remove');
     for (var r = 0; r < removeBtns.length; r++) removeBtns[r].onclick = function() { removeFromLibrary(this.getAttribute('data-name')); renderLibrary(); };
+  }
+
+  function toggleLibrary() {
+    libraryOpen = !libraryOpen;
+    var body = document.getElementById('library-body');
+    var chevron = document.getElementById('library-chevron');
+    if (body) { if (libraryOpen) body.classList.add('open'); else body.classList.remove('open'); }
+    if (chevron) { if (libraryOpen) chevron.classList.add('open'); else chevron.classList.remove('open'); }
+  }
+
+  // Gym tracking
+  function gymKey(dateKey) { return STORAGE_PREFIX + 'gym:' + dateKey; }
+
+  function loadGymForDate(d) {
+    return lsGet(gymKey(dateToKey(d))) === '1';
+  }
+
+  function saveGymForDate(d, val) {
+    if (val) { lsSet(gymKey(dateToKey(d)), '1'); }
+    else { lsRemove(gymKey(dateToKey(d))); }
+  }
+
+  function renderGym() {
+    var cb = document.getElementById('gym-checkbox');
+    var badge = document.getElementById('gym-badge');
+    var section = document.getElementById('gym-section');
+    if (!cb || !badge || !section) return;
+    var went = loadGymForDate(selectedDate);
+    cb.checked = went;
+    if (went) badge.classList.add('visible'); else badge.classList.remove('visible');
+    // Show gym toggle on all days (past and present) so you can view history
+    section.style.display = 'flex';
+    // Disable checkbox on past days if you want read-only — keep editable for all days
+    cb.disabled = false;
   }
 
   function saveGoals() { lsSet(STORAGE_PREFIX + 'goals', JSON.stringify(goals)); }
@@ -1213,6 +1387,7 @@ try {
   applyTheme();
   setSelectedDate(todayDate());
   renderLibrary();
+  renderGym();
 
   document.getElementById('theme-btn').onclick = function() {
     dark = !dark;
@@ -1225,6 +1400,18 @@ try {
   document.getElementById('date-prev').onclick = function() { changeDay(-1); };
   document.getElementById('date-next').onclick = function() { changeDay(1); };
   document.getElementById('date-display').onclick = toggleCalendar;
+
+  var libraryHeader = document.getElementById('library-header');
+  if (libraryHeader) libraryHeader.onclick = toggleLibrary;
+
+  var gymCb = document.getElementById('gym-checkbox');
+  if (gymCb) {
+    gymCb.onchange = function() {
+      saveGymForDate(selectedDate, this.checked);
+      var badge = document.getElementById('gym-badge');
+      if (badge) { if (this.checked) badge.classList.add('visible'); else badge.classList.remove('visible'); }
+    };
+  }
 
   var nameInput = document.getElementById('name');
   nameInput.addEventListener('input', function() {
